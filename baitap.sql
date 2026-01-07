@@ -1,77 +1,118 @@
-create database if not exists baitap;
-use baitap;
+CREATE DATABASE if not exists mini_project_ss08;
+USE mini_project_ss08;
 
-create table if not exists Reader
+-- Xóa bảng nếu đã tồn tại (để chạy lại nhiều lần)
+DROP TABLE IF EXISTS bookings;
+DROP TABLE IF EXISTS rooms;
+DROP TABLE IF EXISTS guests;
+
+-- Bảng khách hàng
+CREATE TABLE guests
 (
-    reader_id     int primary key auto_increment,
-    reader_name   varchar(100) not null,
-    phone         varchar(15) unique,
-    register_date date default (current_date)
+    guest_id   INT PRIMARY KEY AUTO_INCREMENT,
+    guest_name VARCHAR(100),
+    phone      VARCHAR(20)
 );
 
-create table if not exists Book
+-- Bảng phòng
+CREATE TABLE rooms
 (
-    book_id      int primary key,
-    book_title   varchar(150) not null,
-    author       varchar(100),
-    publish_year int check ( publish_year >= 1900 )
+    room_id       INT PRIMARY KEY AUTO_INCREMENT,
+    room_type     VARCHAR(50),
+    price_per_day DECIMAL(10, 0)
 );
 
-create table if not exists Borrow
+-- Bảng đặt phòng
+CREATE TABLE bookings
 (
-    reader_id   int,
-    book_id     int,
-    borrow_date date default (current_date),
-    return_date date,
-    primary key (reader_id, book_id),
-    foreign key (reader_id) references Reader (reader_id),
-    foreign key (book_id) references Book (book_id)
+    booking_id INT PRIMARY KEY AUTO_INCREMENT,
+    guest_id   INT,
+    room_id    INT,
+    check_in   DATE,
+    check_out  DATE,
+    FOREIGN KEY (guest_id) REFERENCES guests (guest_id),
+    FOREIGN KEY (room_id) REFERENCES rooms (room_id)
 );
 
-alter table Reader
-    add column email varchar(100) unique;
+INSERT INTO guests (guest_name, phone)
+VALUES ('Nguyễn Văn An', '0901111111'),
+       ('Trần Thị Bình', '0902222222'),
+       ('Lê Văn Cường', '0903333333'),
+       ('Phạm Thị Dung', '0904444444'),
+       ('Hoàng Văn Em', '0905555555');
 
-alter table Book
-    modify column author varchar(150);
+INSERT INTO rooms (room_type, price_per_day)
+VALUES ('Standard', 500000),
+       ('Standard', 500000),
+       ('Deluxe', 800000),
+       ('Deluxe', 800000),
+       ('VIP', 1500000),
+       ('VIP', 2000000);
 
-alter table Borrow
-    add check ( return_date >= borrow_date );
+INSERT INTO bookings (guest_id, room_id, check_in, check_out)
+VALUES (1, 1, '2024-01-10', '2024-01-12'), -- 2 ngày
+       (1, 3, '2024-03-05', '2024-03-10'), -- 5 ngày
+       (2, 2, '2024-02-01', '2024-02-03'), -- 2 ngày
+       (2, 5, '2024-04-15', '2024-04-18'), -- 3 ngày
+       (3, 4, '2023-12-20', '2023-12-25'), -- 5 ngày
+       (3, 6, '2024-05-01', '2024-05-06'), -- 5 ngày
+       (4, 1, '2024-06-10', '2024-06-11');
+-- 1 ngày
 
-insert into Reader (reader_name, phone, register_date)
-    VALUE
-    ('Nguyễn Văn An', '0901234567', '2024-09-01'),
-    ('Trần Thị Bình', '0912345678', '2024-09-05'),
-    ('Lê Minh Châu', '0923456789', '2024-09-10');
-
-insert into Book (book_id, book_title, author, publish_year)
-    VALUE
-    (101, 'Lập trình C căn bản', 'Nguyễn Văn A', 2018),
-    (102, 'Cơ sở dữ liệu', 'Trần Thị B', 2020),
-    (103, 'Lập trình Java', 'Lê Minh C', 2019),
-    (104, 'Hệ quản trị MySQL', 'Phạm Văn D', 2021);
-
-insert into Borrow (reader_id, book_id, borrow_date, return_date)
-    VALUE
-    (1, 101, '2024-09-15', NULL),
-    (1, 102, '2024-09-15', '2024-09-25'),
-    (2, 103, '2024-09-18', NULL);
-
-update Borrow
-set return_date = '2024-10-01'
-where reader_id = 1;
-update Book
-set publish_year = 2023
-where publish_year >= 2021;
-
-delete
-from Borrow
-where borrow_date < '2024-09-18';
-
+-- Phần I:
+-- Liệt kê tên khách và số điện thoại của tất cả khách hàng
+select guest_name, phone
+from guests;
+-- Liệt kê các loại phòng khác nhau trong khách sạn
+select distinct room_type
+from rooms;
+-- Hiển thị loại phòng và giá thuê theo ngày, sắp xếp theo giá tăng dần
+select room_type, price_per_day
+from rooms
+order by price_per_day asc;
+-- Hiển thị các phòng có giá thuê lớn hơn 1.000.000
 select *
-from Reader;
+from rooms
+where price_per_day > 1000000;
+-- Liệt kê các lần đặt phòng diễn ra trong năm 2024
 select *
-from Book;
+from bookings
+where year(check_in) = 2024;
+-- Cho biết số lượng phòng của từng loại phòng
+select room_type, count(*) as so_luong_phong
+from rooms
+group by room_type;
+-- PHẦN II:
+-- Hãy liệt kê danh sách các lần đặt phòng, Với mỗi lần đặt phòng, hãy hiển thị: Tên khách hàng,Loại phòng đã đặt,Ngày nhận phòng (check_in)
+select g.guest_name, r.room_type, b.check_in
+from bookings b
+         join guests g on b.guest_id = g.guest_id
+         join rooms r on b.room_id = r.room_id;
+-- Cho biết mỗi khách đã đặt phòng bao nhiêu lần
+select g.guest_name, count(b.booking_id) as so_lan_dat_phong
+from guests g
+         left join bookings b on g.guest_id = b.guest_id
+group by g.guest_id, g.guest_name;
+-- Tính doanh thu của mỗi phòng, với công thức: “Doanh thu = số ngày ở × giá thuê theo ngày”
+-- Hiển thị tổng doanh thu của từng loại phòng
+-- Tìm những khách đã đặt phòng từ 2 lần trở lên
+select g.guest_name,
+       count(b.booking_id) as so_lan_dat
+from guests g
+         join bookings b on g.guest_id = b.guest_id
+group by g.guest_id, g.guest_name
+having count(b.booking_id) >= 2;
+-- Tìm loại phòng có số lượt đặt phòng nhiều nhất
+-- PHẦN III:
+-- Hiển thị những phòng có giá thuê cao hơn giá trung bình của tất cả các phòng
 select *
-from Borrow;
-
-
+from rooms
+where price_per_day > (select avg(price_per_day)
+                       from rooms);
+-- Hiển thị những khách chưa từng đặt phòng
+select *
+from guests
+where guest_id not in (
+    select distinct guest_id
+    from bookings
+);
