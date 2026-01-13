@@ -60,29 +60,3 @@ end //
 delimiter ;
 -- b:
 call gettopscorestudent('c00001');
--- câu 6:
--- a
-create or replace view view_it_enrollment_db as
-select e.studentid,
-       e.courseid,
-       e.score
-from enrollment e
-         join student s on e.studentid = s.studentid
-where s.deptid = 'it'
-  and e.courseid = 'c00001'
-with check option;
--- b
-delimiter //
-create procedure updatescore_it_db(
-    in p_studentid char(6),
-    inout p_newscore float
-)
-begin
-    if p_newscore > 10 then
-        set p_newscore = 10;
-    end if;
-    update view_it_enrollment_db
-    set score = p_newscore
-    where studentid = p_studentid;
-end //
-delimiter ;
